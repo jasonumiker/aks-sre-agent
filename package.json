@@ -1,0 +1,32 @@
+{
+  "name": "aks-sre-agent-booth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.16" },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "dev": "tsx src/main.ts",
+    "start": "node dist/src/main.js",
+    "checkout": "tsx src/checkout-main.ts",
+    "rehearse": "tsx scripts/rehearse.ts",
+    "secrets": "tsx scripts/generate-secrets.ts"
+  },
+  "dependencies": {
+    "@azure/data-tables": "^13.3.1",
+    "@azure/identity": "^4.14.0",
+    "@modelcontextprotocol/sdk": "^1.17.0",
+    "@octokit/auth-app": "^8.0.0",
+    "express": "^5.1.0",
+    "yaml": "^2.8.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.15.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.8.3"
+  }
+}

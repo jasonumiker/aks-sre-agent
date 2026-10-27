@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: checkout-prewarm
+spec:
+  selector:
+    matchLabels:
+      app: checkout-prewarm
+  template:
+    metadata:
+      labels:
+        app: checkout-prewarm
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/os: linux
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: prewarm
+          image: checkout:release
+          imagePullPolicy: IfNotPresent
+          command: ["node", "-e", "setInterval(() => {}, 60000)"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 50m
+              memory: 64Mi
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]

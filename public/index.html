@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AKS Rescue Lab</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header><a class="brand" href="/">AKS <span>RESCUE LAB</span></a><span class="pill">AZURE SRE AGENT + ARGO CD</span><button id="logout" class="quiet" hidden>Lock kiosk</button></header>
+  <main>
+    <section id="login" class="login panel">
+      <div class="eyebrow">WELCOME TO THE LAB</div><h1>Break it.<br><span>Watch it recover.</span></h1>
+      <p>A real application. A real failure. An evidence-based repair, delivered through GitOps.</p>
+      <form id="login-form"><label for="token">Kiosk or operator access token</label><input id="token" type="password" autocomplete="current-password" required><button>Enter the lab <span aria-hidden="true">&rarr;</span></button></form>
+    </section>
+    <div id="dashboard" hidden>
+      <div id="mode" class="notice"></div>
+      <section class="hero"><div><div class="eyebrow">YOU BREAK IT. THE AGENT INVESTIGATES.</div><h1>Chaos, meet <span>clarity.</span></h1><p>Choose a failure. Follow the evidence. See GitOps bring checkout back.</p></div><div class="timer"><span id="elapsed">00:00</span><small>CLICK TO VERIFIED RECOVERY</small></div></section>
+      <div class="workspace">
+        <section class="panel storefront">
+          <div class="section-title"><h2>Conference checkout</h2><span id="health" class="status">Checking</span></div>
+          <div class="ticket"><div class="ticket-icon" aria-hidden="true">AKS</div><div><div class="eyebrow">THE CLOUD NATIVE EXPERIENCE</div><h3>One pass. Endless possibilities.</h3><p>Conference day pass &middot; Synthetic orders only</p><strong>$49 <small>USD</small></strong></div></div>
+          <div class="probe-row"><span id="probe-detail">Waiting for checkout probe</span><span id="latency">-- ms</span></div>
+          <p class="caption">A real checkout request runs every second. No payment or personal data.</p>
+        </section>
+        <section class="panel"><div class="section-title"><h2>Choose your chaos</h2><span id="phase" class="pill">STARTING</span></div>
+          <div class="scenarios">
+            <button class="scenario" data-scenario="port"><span class="number">01</span><span><strong>Disconnect checkout</strong><small>Healthy pods. Unreachable service.</small></span><span aria-hidden="true">&nearr;</span></button>
+            <button class="scenario" data-scenario="configuration"><span class="number">02</span><span><strong>Break its configuration</strong><small>A bad setting. A failed startup.</small></span><span aria-hidden="true">&nearr;</span></button>
+            <button class="scenario" data-scenario="scheduling"><span class="number">03</span><span><strong>Strand the pods</strong><small>No matching node. Nowhere to run.</small></span><span aria-hidden="true">&nearr;</span></button>
+          </div><p id="instruction" class="caption">An operator must verify the baseline before the first run.</p>
+        </section>
+      </div>
+      <section class="panel timeline-panel"><div class="section-title"><h2>The recovery story</h2><span class="caption">OBSERVED EVENTS, NOT A SCRIPTED TRANSCRIPT</span></div>
+        <ol class="steps"><li data-step="INJECTING">01 &nbsp; Git fault</li><li data-step="INVESTIGATING">02 &nbsp; Investigate</li><li data-step="REPAIRING">03 &nbsp; Git repair</li><li data-step="VERIFYING">04 &nbsp; Verify</li><li data-step="READY">05 &nbsp; Ready</li></ol>
+        <ol id="events" class="events" aria-live="polite"></ol>
+        <details id="git-change" hidden><summary id="change-title">Git manifest change</summary><pre id="diff"></pre></details>
+      </section>
+      <section id="operator" class="panel operator" hidden><div class="section-title"><h2>Operator console</h2><a href="/api/export" class="quiet">Export runs</a></div>
+        <div class="actions"><button id="reset">Restore &amp; verify baseline</button><button id="inspect" class="quiet">Inspect current run</button></div>
+        <div id="local-repair" hidden><p>Local rehearsal only. No Azure SRE Agent is connected. Diagnose the evidence and submit a correction yourself.</p>
+          <form id="repair-form"><label>Corrected field<select id="field"><option value="targetPort">Service targetPort = 8080</option><option value="checkoutMode">CHECKOUT_MODE = conference</option><option value="nodeSelector">nodeSelector = Linux baseline</option></select></label><label>Evidence supporting this correction<textarea id="evidence" minlength="20" maxlength="2000" required placeholder="Describe the observed evidence, not just the chosen button"></textarea></label><button>Commit operator repair</button></form>
+        </div><pre id="inspection" hidden></pre>
+      </section>
+    </div>
+    <div id="error" class="error" role="alert" hidden></div>
+  </main><footer>Git is the source of truth. Argo CD reconciles. Recovery is independently verified.</footer>
+</body>
+</html>

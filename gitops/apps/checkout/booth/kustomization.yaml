@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: booth
+resources:
+  - ../base
+  - quota.yaml
+  - prewarm.yaml
+patches:
+  - path: patch.yaml
+images:
+  - name: checkout
+    newName: acraks2t8p.azurecr.io/sre-demo/checkout
+    digest: sha256:40957e5d6c4aa7f8a6f99ac2e575ed2833c3ac8fc3a771edfefc01c6c37782ac

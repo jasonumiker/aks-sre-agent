@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: booth
+  namespace: argocd
+spec:
+  description: Isolated checkout booth demo
+  sourceRepos:
+    - https://github.com/REPLACE_OWNER/REPLACE_REPO.git
+  destinations:
+    - namespace: booth
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+    - group: apps
+      kind: Deployment
+    - group: apps
+      kind: DaemonSet
+    - group: ""
+      kind: Service
+    - group: ""
+      kind: ResourceQuota

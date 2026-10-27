@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: checkout
+  namespace: argocd
+spec:
+  project: booth
+  source:
+    repoURL: https://github.com/REPLACE_OWNER/REPLACE_REPO.git
+    targetRevision: booth
+    path: gitops/apps/checkout/booth
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: booth
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    retry:
+      limit: 3
+      refresh: true
+      backoff:
+        duration: 2s
+        factor: 2
+        maxDuration: 10s

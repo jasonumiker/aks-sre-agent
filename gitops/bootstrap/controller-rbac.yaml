@@ -1,0 +1,51 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: booth-diagnostics
+  namespace: booth
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "services", "events"]
+    verbs: ["get", "list"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: booth-controller-diagnostics
+  namespace: booth
+subjects:
+  - kind: User
+    name: REPLACE_CONTROLLER_PRINCIPAL_ID
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: booth-diagnostics
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: booth-refresh
+  namespace: argocd
+rules:
+  - apiGroups: ["argoproj.io"]
+    resources: ["applications"]
+    resourceNames: ["checkout"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: booth-controller-refresh
+  namespace: argocd
+subjects:
+  - kind: User
+    name: REPLACE_CONTROLLER_PRINCIPAL_ID
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: booth-refresh
+  apiGroup: rbac.authorization.k8s.io
