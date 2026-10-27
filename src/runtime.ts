@@ -6,8 +6,8 @@ import { AppError, type Deployment, type RuntimePort, type TriggerPort } from ".
 export class AzureTrigger implements TriggerPort {
   constructor(private url: string, private credential: TokenCredential) {}
   async invoke(context: Record<string, unknown>) {
-    const token = await this.credential.getToken("https://management.azure.com/.default");
-    if (!token) throw new Error("Managed identity returned no ARM token");
+    const token = await this.credential.getToken("https://azuresre.dev/.default");
+    if (!token) throw new Error("Managed identity returned no SRE Agent token");
     const response = await fetch(this.url, {
       method: "POST", signal: AbortSignal.timeout(15_000),
       headers: { authorization: `Bearer ${token.token}`, "content-type": "application/json" },

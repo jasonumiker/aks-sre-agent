@@ -6,7 +6,7 @@ metadata:
 spec:
   description: Isolated checkout booth demo
   sourceRepos:
-    - https://github.com/REPLACE_OWNER/REPLACE_REPO.git
+    - https://github.com/jasonumiker/aks-sre-agent.git
   destinations:
     - namespace: booth
       server: https://kubernetes.default.svc

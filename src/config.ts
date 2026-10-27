@@ -15,23 +15,34 @@ const common = z.object({
   LOCAL_GATEWAY_PORT: z.coerce.number().int().min(1024).max(65535).default(4001),
   LOCAL_WORKER_PORT: z.coerce.number().int().min(1024).max(65535).default(4002)
 });
+export const githubAuthSchema = z.discriminatedUnion("GITHUB_AUTH_MODE", [
+  z.object({
+    GITHUB_AUTH_MODE: z.literal("app"),
+    GITHUB_APP_ID: z.string().min(1),
+    GITHUB_INSTALLATION_ID: z.coerce.number().int().positive(),
+    GITHUB_PRIVATE_KEY: z.string().min(100)
+  }),
+  z.object({
+    GITHUB_AUTH_MODE: z.literal("token"),
+    GITHUB_TOKEN: z.string().trim().min(1)
+  })
+]);
 const azure = z.object({
   CHECKOUT_URL: z.string().url(),
   TABLE_ENDPOINT: z.string().url(), TABLE_NAME: z.string().regex(/^[A-Za-z][A-Za-z0-9]{2,62}$/).default("booth"),
   GITHUB_OWNER: z.string().regex(/^[A-Za-z0-9-]+$/), GITHUB_REPO: z.string().regex(/^[A-Za-z0-9_.-]+$/),
   GITHUB_BRANCH: z.string().regex(/^[A-Za-z0-9_/-]+$/).default("booth"),
-  GITHUB_APP_ID: z.string().min(1), GITHUB_INSTALLATION_ID: z.coerce.number().int().positive(),
-  GITHUB_PRIVATE_KEY: z.string().min(100),
   AKS_SERVER: z.string().url().startsWith("https://"), AKS_CA: z.string().min(20),
   AKS_RESOURCE_ID: z.string().startsWith("/subscriptions/"),
   KUBE_NAMESPACE: z.string().regex(/^[a-z0-9-]+$/).default("booth"),
   ARGO_APPLICATION: z.string().regex(/^[a-z0-9-]+$/).default("checkout"),
   SRE_TRIGGER_URL: z.string().url().startsWith("https://")
-});
+}).and(githubAuthSchema);
 export type Config = z.infer<typeof common>;
 export type AzureConfig = z.infer<typeof azure>;
 export async function configuration(): Promise<{ common: Config; azure?: AzureConfig }> {
   const env = { ...process.env };
+  env.GITHUB_AUTH_MODE ??= "app";
   if (env.MODE === "azure") env.ENABLED_SCENARIOS ??= "port";
   if ((env.MODE ?? "local") === "local") {
     const dir = env.LOCAL_DIR ?? ".local";

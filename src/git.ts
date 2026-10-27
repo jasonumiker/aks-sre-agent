@@ -6,6 +6,9 @@ import { AppError, type GitPort, type Snapshot } from "./domain.js";
 
 const exec = promisify(execFile);
 export const manifestPath = "gitops/apps/checkout/booth/patch.yaml";
+export type GitHubAuth =
+  | { mode: "app"; appId: string; installationId: number; privateKey: string }
+  | { mode: "token"; token: string };
 export class LocalGit implements GitPort {
   constructor(private path: string) {}
   private async git(...args: string[]) {
@@ -53,16 +56,21 @@ async function gitInput(path: string, args: string[], input: string): Promise<st
   });
 }
 export class GitHubGit implements GitPort {
-  private auth: ReturnType<typeof createAppAuth>;
+  private token: () => Promise<string>;
   constructor(private owner: string, private repo: string, private branch: string,
-    appId: string, installationId: number, privateKey: string) {
-    this.auth = createAppAuth({ appId, installationId, privateKey });
+    credentials: GitHubAuth) {
+    if (credentials.mode === "token") {
+      this.token = async () => credentials.token;
+    } else {
+      const auth = createAppAuth(credentials);
+      this.token = async () => (await auth({ type: "installation" })).token;
+    }
   }
   private async request(path: string, method = "GET", body?: unknown): Promise<unknown> {
-    const auth = await this.auth({ type: "installation" });
+    const token = await this.token();
     const response = await fetch(`https://api.github.com/repos/${this.owner}/${this.repo}/${path}`, {
       method, signal: AbortSignal.timeout(15_000),
-      headers: { authorization: `Bearer ${auth.token}`, accept: "application/vnd.github+json",
+      headers: { authorization: `Bearer ${token}`, accept: "application/vnd.github+json",
         "content-type": "application/json", "x-github-api-version": "2022-11-28" },
       ...(body === undefined ? {} : { body: JSON.stringify(body) })
     });

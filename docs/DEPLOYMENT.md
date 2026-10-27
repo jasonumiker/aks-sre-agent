@@ -26,14 +26,57 @@ The current checkout overlay is pinned to the image published in
 `rg-aks-2t8p`. Both `sre-demo/checkout:20261027` and `sre-demo/booth:20261027` are
 published to that registry.
 
-On 27 October 2026, image publication succeeded, but namespace creation was
-rejected by AKS authorization. A temporary custom role permitting only namespace
-and quota writes did not resolve actual namespace creation, even after the
-authorization probe reported permission. That temporary role and assignment were
-removed. No application workloads were deployed. A cluster administrator must
-create and label the `booth` namespace before retrying; quota creation also needs
-explicit permission, or an administrator can apply the quota manifest separately.
-The existing cluster, Argo CD installation, and workloads were not reconfigured.
+On 27 October 2026, the initial namespace bootstrap was rejected by AKS
+authorization; the temporary custom role and assignment used to investigate it
+were removed. After the namespace became available, checkout, quota, and image
+prewarming were successfully deployed. The existing Argo CD now manages checkout
+from the dedicated `booth` branch of `jasonumiker/aks-sre-agent` and reports
+Synced/Healthy. The completed deployment is available at:
+
+- Booth: https://sredemo-controller.orangeriver-a46f9da4.australiaeast.azurecontainerapps.io
+- Synthetic checkout: http://4.200.85.187
+- SRE Agent: `sre-aks-2t8p` in https://sre.azure.com
+
+The controller uses a fine-grained GitHub token held in Key Vault, managed identity
+for Azure access, private endpoints for Key Vault/Table storage, and the
+VNet-integrated `sredemo-private-booth` Container Apps environment. Tenant policy
+forces public access off for the vault and storage; do not disable that policy.
+The existing cluster and Argo CD installation were preserved.
+
+All three scenarios were verified against the real agent, GitHub, Argo CD and AKS,
+with agent-attributed Git corrections and sustained functional recovery:
+
+| Scenario | Click-to-verified-recovery |
+| --- | --- |
+| Service target port | 57.210 seconds |
+| Invalid startup configuration | 58.680 seconds |
+| Unmatched node selector | 54.573 seconds |
+
+These are individual smoke-test measurements, not p95 certification or a soak
+test. The port scenario also passed repeated runs, including a final 60.772-second
+run after reapplying the reproducible agent configuration. All three buttons are
+enabled, and the final observed state was READY with Argo CD Synced/Healthy.
+The controller is pinned
+to booth image digest
+`sha256:a1f48d8d53e176a3b01b3c0426d9be9dfc885e6a7c5d5a579379ac85787dfe2a`.
+Operator/kiosk login tokens are in protected local files under
+`.local/azure-secrets/`, not in this document or public browser URLs.
+
+For reproducibility, `infra/existing-cluster.bicep` provisions identity, private
+vault/storage and their role assignments; `infra/private-network.bicep` adds
+dedicated subnets, private endpoints/DNS and the Container Apps environment.
+Its subnet ranges are specific to this VNet and must be checked before reuse.
+`infra/demo-agent.bicep` creates the dedicated Low-access/Review-mode SRE Agent.
+`infra/credentials.bicep` accepts secure parameters to provision vault secrets
+through ARM without opening a public data endpoint. Never commit a populated
+credential parameter file or log its values.
+
+The public checkout also requires the narrow `allow-sre-checkout-http` NSG rule
+on `vnet-aks-2t8p-clusterSubnet-nsg-australiaeast`: priority 400, inbound TCP from
+Internet to `4.200.85.187`, destination port 80. The actual node subnet is
+`clusterSubnet`, not `systemSubnet`. Kubernetes manages the node NIC NSG rule;
+the additional subnet NSG otherwise blocks it. Remove this named rule at teardown;
+do not replace the shared NSG or open all node ports.
 
 This cluster already has Argo CD and uses **Azure RBAC for Kubernetes**, unlike
 the new-cluster template below. Reuse its Argo CD installation. Do not disable
@@ -41,7 +84,7 @@ Azure RBAC or replace the cluster's authentication configuration. Its AKS RBAC
 Admin role excludes namespace and quota creation; a cluster operator needs
 explicitly scoped permission to bootstrap those resources.
 
-Until a hosted GitOps repository, GitHub App credentials, and SRE Agent trigger
+Until a hosted GitOps repository, GitHub credentials, and SRE Agent trigger
 are configured, a direct checkout deployment is only a staging deployment. It
 does not provide Argo CD reconciliation, the booth dashboard, or autonomous repair.
 Do not install an Application pointing at placeholder URLs, or enable public fault
@@ -92,7 +135,7 @@ the same image substitution. Never deploy the all-zero placeholder.
 
 Replace the repository URL placeholders in both bootstrap project/application
 manifests. Create/push a dedicated `booth` branch with these changes. Protect the
-main branch; allow the GitHub App below to write the booth branch without an
+main branch; allow the selected GitHub identity below to write the booth branch without an
 interactive PR approval during the demo.
 
 The only file the repair service can write is
@@ -145,7 +188,51 @@ hooks or later waves**. Argo CD can then complete manifest application even when
 the intentionally broken workload is unhealthy. Health-gated sync waves can leave
 an operation waiting and block the next corrective commit's deployment.
 
-## 4. GitHub App and secrets
+## 4. GitHub authentication and secrets
+
+### Recommended for this booth: fine-grained personal access token
+
+Open https://github.com/settings/personal-access-tokens/new and create a token:
+
+- Resource owner: `jasonumiker`.
+- Repository access: **Only select repositories**, then `aks-sre-agent`.
+- Repository permissions: **Contents: Read and write**; Metadata read is automatic.
+- Expiration: shortly after the conference. Organization approval may be required.
+- No Actions, Workflows, Administration, or organization permissions are needed.
+
+Store the token in a protected file outside the repository. Do not paste it in
+chat, a shell command argument, Git remote URL, or a tracked environment file.
+On macOS, one option is to copy the token, then run:
+
+```sh
+mkdir -p "$HOME/.config/aks-sre-agent"
+chmod 700 "$HOME/.config/aks-sre-agent"
+(umask 077; pbpaste > "$HOME/.config/aks-sre-agent/github-token")
+printf '' | pbcopy
+```
+
+Ensure the clipboard contained only the token. Share only the absolute file path
+with the deployment operator. Do not print the token to verify it.
+
+After Key Vault is available, upload without displaying the value:
+
+```sh
+az keyvault secret set --vault-name "$VAULT_NAME" --name github-token \
+  --file "$HOME/.config/aks-sre-agent/github-token" --output none
+```
+
+In the booth deployment parameters, set `githubAuthMode` to `token`; omit
+`githubAppId` and `githubInstallationId`. The template references only the
+`github-token` secret in token mode; no App/private-key secret is required.
+Rotate/replace the secret before expiration and roll/restart the Container App
+to ensure the process receives the new value. Token failures explicitly stop the
+run; there is no fallback to another credential.
+
+For private repositories, Argo CD needs separate read authentication. Prefer a
+read-only deploy key or a separate read-only token; do not distribute the repair
+write token to Argo CD. Public repositories can be read anonymously.
+
+### Alternative: GitHub App
 
 Create a GitHub App installed on **only the demo repository**:
 
@@ -175,6 +262,10 @@ az keyvault secret set --vault-name "$VAULT_NAME" --name github-private-key \
   --file "$GITHUB_APP_KEY_PATH" --output none
 ```
 
+The `github-private-key` upload is required only for App mode (`githubAuthMode=app`,
+the backward-compatible default). For token mode upload `github-token` instead.
+Generate/upload the four booth/session secrets for either mode.
+
 The foundation grants only the controller identity Key Vault Secrets User and
 Table Data Contributor. These secrets are injected using Container Apps Key Vault
 references, not plaintext Bicep parameters. Allow for RBAC propagation.
@@ -185,11 +276,14 @@ In the SRE Agent portal:
 
 1. Create a custom agent with the text from `agent/handler.txt`.
 2. Create an HTTP trigger targeting that custom agent. Start in **Review** mode.
-3. Copy the generated trigger URL. The controller calls it with an ARM token.
+3. Copy the generated trigger URL. The controller calls it with an SRE Agent
+   data-plane token (`https://azuresre.dev/.default`), not an ARM token. The
+   documented ARM audience returned HTTP 401 in this tenant.
 4. Do not attach an overlapping Azure Monitor quickstart response plan to this
    same demo; the primary path is an explicit probe-driven HTTP trigger.
 
-Grant the controller only trigger invocation on the selected agent:
+Grant the controller agent metadata/thread reads and thread invocation on the
+selected agent (the write permission is a **data action**, not an ARM action):
 
 ```sh
 az deployment group create --resource-group "$RESOURCE_GROUP" --name agent-access \
@@ -199,6 +293,8 @@ az deployment group create --resource-group "$RESOURCE_GROUP" --name agent-acces
 
 The agent must reside in this resource group for this small template. For an
 existing agent in another group, deploy this template in that group instead.
+Allow time for role propagation. The final deployment was verified using only
+this custom role; a temporary SRE Agent Standard User grant was removed.
 
 ## 6. Deploy the booth controller
 
@@ -221,7 +317,9 @@ Create a local, gitignored parameter file for `infra/booth.bicep`. Required valu
 | `vaultUri`, `tableEndpoint`, `aksServer`, `aksResourceId` | Foundation outputs |
 | `checkoutUrl` | Reachable synthetic checkout URL |
 | `aksCa` | Base64 API certificate authority from the previous command |
-| `githubOwner`, `githubRepo`, `githubAppId`, `githubInstallationId` | Demo GitHub App details |
+| `githubOwner`, `githubRepo` | `jasonumiker`, `aks-sre-agent` |
+| `githubAuthMode` | `token` for a fine-grained PAT; `app` (default) for GitHub App |
+| `githubAppId`, `githubInstallationId` | Required only for App mode; omit for token mode |
 | `sreTriggerUrl` | Generated SRE Agent HTTP trigger URL |
 | `publicOrigin` | HTTPS booth origin; initially omit, then set the returned URL |
 
@@ -244,6 +342,25 @@ Add a **Streamable HTTP MCP connector** to SRE Agent:
 - Custom header: `Authorization: Bearer MCP_TOKEN`, using the actual server secret.
 - Tools: `inspect_checkout`, `repair_checkout`.
 - Assign only those tools to the custom agent.
+
+To reproduce the connector/custom-agent/trigger configuration using Azure CLI
+authentication, run the idempotent setup script from the repository root:
+
+```sh
+AGENT_RESOURCE_ID="/subscriptions/.../resourceGroups/.../providers/Microsoft.App/agents/..." \
+AGENT_ENDPOINT="https://YOUR-AGENT.azuresre.ai" \
+BOOTH_URL="https://YOUR-BOOTH-HOST" \
+MCP_TOKEN_FILE=".local/azure-secrets/mcp-token" \
+AGENT_MODE=Review npx tsx scripts/configure-agent.ts
+```
+
+It reads the MCP credential from the protected file without printing it, selects
+the two prefixed MCP tool IDs, clears common/shell tools, and preserves an existing
+trigger ID. After review, rerun with `AGENT_MODE=Autonomous`. The HTTP payload is
+automatically attached to the trigger prompt; no `{{body}}` substitution is needed.
+Review mode alone is not a write-approval boundary for MCP tools: the live tenant
+executed the broker's repair tool in Review mode. Always review tool policies as
+well; the broker allowlist and per-run authorization remain the enforcement layer.
 
 The inspection tool brokers live Kubernetes reads through the controller's narrow
 RBAC identity, so the agent does not need cluster-admin or a separate Kubernetes

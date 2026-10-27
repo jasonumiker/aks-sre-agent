@@ -19,7 +19,9 @@ if (config.azure) {
   const env = config.azure;
   const credential = new ManagedIdentityCredential({ clientId: process.env.AZURE_CLIENT_ID });
   git = new GitHubGit(env.GITHUB_OWNER, env.GITHUB_REPO, env.GITHUB_BRANCH,
-    env.GITHUB_APP_ID, env.GITHUB_INSTALLATION_ID, env.GITHUB_PRIVATE_KEY);
+    env.GITHUB_AUTH_MODE === "token" ? { mode: "token", token: env.GITHUB_TOKEN } :
+      { mode: "app", appId: env.GITHUB_APP_ID, installationId: env.GITHUB_INSTALLATION_ID,
+        privateKey: env.GITHUB_PRIVATE_KEY });
   store = new TableStore(env.TABLE_ENDPOINT, env.TABLE_NAME, credential);
   runtime = new KubernetesRuntime(env.AKS_SERVER, env.AKS_CA, env.KUBE_NAMESPACE, env.ARGO_APPLICATION, credential);
   trigger = new AzureTrigger(env.SRE_TRIGGER_URL, credential);

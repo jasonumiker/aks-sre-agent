@@ -9,7 +9,16 @@ resource triggerRole 'Microsoft.Authorization/roleDefinitions@2022-04-01' = {
     roleName: 'Booth trigger ${resourceGroup().name}'
     description: 'Invoke SRE Agent threads for the conference booth.'
     type: 'CustomRole'
-    permissions: [{ actions: ['Microsoft.App/agents/threads/write'], notActions: [] }]
+    permissions: [{
+      actions: ['Microsoft.App/agents/read']
+      notActions: []
+      dataActions: [
+        'Microsoft.App/agents/threads/read'
+        'Microsoft.App/agents/threads/write'
+        'Microsoft.App/agents/extendedAgents/read'
+      ]
+      notDataActions: []
+    }]
     assignableScopes: [resourceGroup().id]
   }
 }

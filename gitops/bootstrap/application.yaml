@@ -6,7 +6,7 @@ metadata:
 spec:
   project: booth
   source:
-    repoURL: https://github.com/REPLACE_OWNER/REPLACE_REPO.git
+    repoURL: https://github.com/jasonumiker/aks-sre-agent.git
     targetRevision: booth
     path: gitops/apps/checkout/booth
   destination:

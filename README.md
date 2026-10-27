@@ -50,7 +50,7 @@ To run compiled local code: `npm run build && npm start`.
 
 ## Deploy and operate
 
-- [Azure deployment](docs/DEPLOYMENT.md): infrastructure, images, GitHub App,
+- [Azure deployment](docs/DEPLOYMENT.md): infrastructure, images, fine-grained token or GitHub App,
   Kubernetes bootstrap, SRE Agent connector/trigger, and application configuration.
 - [Booth operator runbook](docs/OPERATIONS.md): preflight, resets, timing rehearsal,
   failure handling, and teardown.
@@ -70,6 +70,13 @@ change the three approved manifest fields/values in one configured Git path.
 Azure mode has no browser-based repair endpoint.
 
 ## Important limits
+
+GitHub authentication supports `GITHUB_AUTH_MODE=token` with `GITHUB_TOKEN`, or
+`GITHUB_AUTH_MODE=app` (the default) with the existing App ID, installation ID,
+and private key. Use a short-lived fine-grained token scoped to this repository
+with Contents read/write for the booth. In Azure, select `githubAuthMode: token`
+in deployment parameters; the controller reads the `github-token` Key Vault secret.
+Never put the token in source, parameter files, browser code, or agent context.
 
 - Azure mode needs explicit tenant/subscription/agent configuration. A local demo
   is not proof of AKS permissions, managed-service latency, or autonomous recovery.

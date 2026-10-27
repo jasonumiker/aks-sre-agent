@@ -4,7 +4,7 @@
 
 1. Confirm Azure budget notifications and no real customer data/workloads.
 2. Confirm checkout image prewarming on every eligible node and spare node capacity.
-3. Check Container App health/logs, Table access, GitHub App installation, Argo CD,
+3. Check Container App health/logs, Table access, GitHub token/App access, Argo CD,
    SRE trigger authentication, and MCP connector health.
 4. Log in using the operator token; select **Restore & verify baseline**.
 5. Wait for READY: expected Git revision, Argo CD Synced/Healthy, and ten successful
@@ -80,8 +80,14 @@ agent with an automatic reset while retaining an "agent fixed it" message.
 ## Teardown
 
 Export the event history, timing report and any useful agent audit first.
-Confirm the exact dedicated resource group in the selected subscription and remove
-only that group using your organization's approved deletion process. This deletes
-the cluster, registry, controller and run storage. Key Vault soft-delete retention
-and separately provisioned SRE Agent resources may need additional lifecycle
-handling. Revoke the demo GitHub App installation and rotate/revoke booth tokens.
+The current deployment **reuses** `rg-aks-2t8p`, its AKS cluster, ACR, VNet and
+Argo CD: **do not delete that resource group**. Remove only demo-owned resources:
+the `checkout` Application and `booth` AppProject, the `booth` namespace, controller
+Container App, dedicated SRE Agent and identities/telemetry, demo vault/storage,
+private Container Apps environment, private endpoints/DNS links/zones and dedicated
+subnets. Remove the named checkout subnet NSG rule and demo role assignments/custom
+role after their consumers are gone. Preserve existing networking and telemetry.
+Review each resource/dependency before deletion, including Key Vault retention.
+Revoke the fine-grained GitHub token (or demo App installation) and booth tokens.
+Only a deployment created in a genuinely dedicated, disposable resource group may
+use whole-group deletion through the organization's approved process.

@@ -15,8 +15,10 @@ param aksCa string
 param aksResourceId string
 param githubOwner string
 param githubRepo string
-param githubAppId string
-param githubInstallationId string
+@allowed(['app', 'token'])
+param githubAuthMode string = 'app'
+param githubAppId string = ''
+param githubInstallationId string = ''
 param sreTriggerUrl string
 @description('HTTPS origin. Leave empty on first deploy, then redeploy with the returned app URL.')
 param publicOrigin string = 'https://unconfigured.invalid'
@@ -24,7 +26,15 @@ param enabledScenarios string = 'port'
 
 resource environment 'Microsoft.App/managedEnvironments@2024-03-01' existing = { name: environmentName }
 resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = { name: identityName }
-var secretNames = ['booth-token', 'operator-token', 'mcp-token', 'session-secret', 'github-private-key']
+var secretNames = concat(['booth-token', 'operator-token', 'mcp-token', 'session-secret'],
+  githubAuthMode == 'token' ? ['github-token'] : ['github-private-key'])
+var githubEnvironment = githubAuthMode == 'token'
+  ? [{ name: 'GITHUB_TOKEN', secretRef: 'github-token' }]
+  : [
+      { name: 'GITHUB_PRIVATE_KEY', secretRef: 'github-private-key' }
+      { name: 'GITHUB_APP_ID', value: githubAppId }
+      { name: 'GITHUB_INSTALLATION_ID', value: githubInstallationId }
+    ]
 resource booth 'Microsoft.App/containerApps@2024-03-01' = {
   name: name
   location: location
@@ -51,7 +61,7 @@ resource booth 'Microsoft.App/containerApps@2024-03-01' = {
         name: 'booth'
         image: boothImage
         resources: { cpu: json('0.5'), memory: '1Gi' }
-        env: [
+        env: concat([
           { name: 'MODE', value: 'azure' }
           { name: 'PORT', value: '3000' }
           { name: 'PUBLIC_ORIGIN', value: publicOrigin }
@@ -61,7 +71,7 @@ resource booth 'Microsoft.App/containerApps@2024-03-01' = {
           { name: 'OPERATOR_TOKEN', secretRef: 'operator-token' }
           { name: 'MCP_TOKEN', secretRef: 'mcp-token' }
           { name: 'SESSION_SECRET', secretRef: 'session-secret' }
-          { name: 'GITHUB_PRIVATE_KEY', secretRef: 'github-private-key' }
+          { name: 'GITHUB_AUTH_MODE', value: githubAuthMode }
           { name: 'TABLE_ENDPOINT', value: tableEndpoint }
           { name: 'CHECKOUT_URL', value: checkoutUrl }
           { name: 'AKS_SERVER', value: aksServer }
@@ -69,10 +79,8 @@ resource booth 'Microsoft.App/containerApps@2024-03-01' = {
           { name: 'AKS_RESOURCE_ID', value: aksResourceId }
           { name: 'GITHUB_OWNER', value: githubOwner }
           { name: 'GITHUB_REPO', value: githubRepo }
-          { name: 'GITHUB_APP_ID', value: githubAppId }
-          { name: 'GITHUB_INSTALLATION_ID', value: githubInstallationId }
           { name: 'SRE_TRIGGER_URL', value: sreTriggerUrl }
-        ]
+        ], githubEnvironment)
         probes: [
           { type: 'Liveness', httpGet: { path: '/health/live', port: 3000 }, periodSeconds: 10 }
           { type: 'Startup', httpGet: { path: '/health/live', port: 3000 }, periodSeconds: 2, failureThreshold: 30 }
