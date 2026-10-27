@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+.local/
+*.log
+infra/*.json
+!infra/*.example.json
+coverage/
+*.pem
+rehearsal-report.json
