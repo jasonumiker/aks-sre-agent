@@ -69,6 +69,27 @@ endpoint at `/mcp`. `inspect_checkout` reads evidence; `repair_checkout` can onl
 change the three approved manifest fields/values in one configured Git path.
 Azure mode has no browser-based repair endpoint.
 
+### Access the Argo CD console
+
+With kubectl configured for the cluster, forward the private Argo CD service to
+localhost and leave the command running:
+
+```sh
+kubectl -n argocd port-forward svc/argocd-server 8080:443
+```
+
+Open <https://localhost:8080>, accept the local certificate warning, and log in
+as `admin`. In another terminal, retrieve the initial password:
+
+```sh
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath='{.data.password}' | base64 --decode; echo
+```
+
+If the initial password was changed or the secret was removed, use the configured
+admin password instead. The port-forward binds to localhost only by default;
+it does not expose Argo CD to the public internet.
+
 ## Important limits
 
 GitHub authentication supports `GITHUB_AUTH_MODE=token` with `GITHUB_TOKEN`, or
