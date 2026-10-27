@@ -3,10 +3,6 @@ kind: Deployment
 metadata:
   name: checkout
 spec:
-  replicas: 1
-  strategy:
-    type: Recreate
-    rollingUpdate: null
   template:
     spec:
       nodeSelector:
@@ -16,14 +12,18 @@ spec:
           env:
             - name: CHECKOUT_MODE
               value: conference
+  replicas: 1
+  strategy:
+    type: Recreate
+    rollingUpdate: null
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: checkout
 spec:
-  type: LoadBalancer
   ports:
     - name: http
       port: 80
       targetPort: 8080
+  type: LoadBalancer
