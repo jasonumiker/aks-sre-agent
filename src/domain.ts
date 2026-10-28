@@ -44,6 +44,7 @@ export interface State {
   healthyCount: number;
   healthySince?: number;
   lastProbe?: Probe;
+  probeHistory?: Pick<Probe, "at" | "ok">[];
   change?: { sha: string; diff: string; actor: Actor };
   resetAt?: number;
 }

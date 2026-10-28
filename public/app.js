@@ -22,6 +22,38 @@ async function action(work) {
   try { await work(); await refresh(); } catch (error) { showError(error); }
   finally { busy = false; render(); }
 }
+function renderAvailability(samples = []) {
+  const now = Date.now();
+  const start = now - 300_000;
+  const visible = samples.filter(sample => sample.at >= start && sample.at <= now);
+  const successful = visible.filter(sample => sample.ok).length;
+  const summary = visible.length
+    ? `${(successful / visible.length * 100).toFixed(1)}% successful checks (${visible.length} ${visible.length === 1 ? "sample" : "samples"})`
+    : "Waiting for checkout probes";
+  $("availability-summary").textContent = summary;
+  $("availability-description").textContent =
+    `Last five minutes: ${summary}. Each sample is a synthetic checkout request. UP means success; DOWN means failure. Gaps indicate no recorded checks.`;
+  const paths = { up: [], down: [] };
+  let previous;
+  for (const sample of visible) {
+    const x = 54 + (sample.at - start) / 300_000 * 534;
+    const y = sample.ok ? 28 : 126;
+    const path = paths[sample.ok ? "up" : "down"];
+    if (previous && sample.at - previous.at <= 3000) {
+      path.push(`M ${previous.x} ${previous.y} H ${x} V ${y}`);
+    }
+    path.push(`M ${x} ${y} h 0.01`);
+    previous = { at: sample.at, x, y };
+  }
+  $("availability-samples").replaceChildren();
+  for (const [status, commands] of Object.entries(paths)) {
+    if (!commands.length) continue;
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("class", `availability-${status}`);
+    path.setAttribute("d", commands.join(" "));
+    $("availability-samples").append(path);
+  }
+}
 function render() {
   if (!state) return;
   $("login").hidden = true;
@@ -37,6 +69,7 @@ function render() {
   $("health").className = `status ${probe?.ok ? "good" : "bad"}`;
   $("probe-detail").textContent = probe?.detail ?? "Waiting for a checkout probe";
   $("latency").textContent = probe ? `${probe.latencyMs} ms` : "-- ms";
+  renderAvailability(state.probeHistory);
   document.querySelectorAll("[data-scenario]").forEach(button => {
     button.disabled = busy || state.phase !== "READY";
     button.hidden = !state.enabledScenarios.includes(button.dataset.scenario);

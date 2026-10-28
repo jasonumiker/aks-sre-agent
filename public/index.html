@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AKS Rescue Lab</title>
+  <title>AKS AI-Assisted Operations Lab</title>
   <link rel="stylesheet" href="/style.css">
   <script src="/app.js" defer></script>
 </head>
 <body>
-  <header><a class="brand" href="/">AKS <span>RESCUE LAB</span></a><span class="pill">AZURE SRE AGENT + ARGO CD</span><button id="logout" class="quiet" hidden>Lock kiosk</button></header>
+  <header><a class="brand" href="/">AKS <span>AI-ASSISTED OPERATIONS LAB</span></a><span class="pill">AZURE SRE AGENT + ARGO CD</span><button id="logout" class="quiet" hidden>Lock kiosk</button></header>
   <main>
     <section id="login" class="login panel">
       <div class="eyebrow">WELCOME TO THE LAB</div><h1>Break it.<br><span>Watch it recover.</span></h1>
@@ -17,13 +17,23 @@
     </section>
     <div id="dashboard" hidden>
       <div id="mode" class="notice"></div>
-      <section class="hero"><div><div class="eyebrow">YOU BREAK IT. THE AGENT INVESTIGATES.</div><h1>Chaos, meet <span>clarity.</span></h1><p>Choose a failure. Follow the evidence. See GitOps bring checkout back.</p></div><div class="timer"><span id="elapsed">00:00</span><small>CLICK TO VERIFIED RECOVERY</small></div></section>
+      <section class="hero"><div><div class="eyebrow">YOU BREAK IT. THE AGENT INVESTIGATES.</div><h1>You build it, you run it <span>(with SRE Agent's help)</span></h1><p>Choose a failure. See SRE Agent follows the evidence and then fix it via GitOps.</p></div><div class="timer"><span id="elapsed">00:00</span><small>CLICK TO VERIFIED RECOVERY</small></div></section>
       <div class="workspace">
         <section class="panel storefront">
-          <div class="section-title"><h2>Conference checkout</h2><span id="health" class="status">Checking</span></div>
-          <div class="ticket"><div class="ticket-icon" aria-hidden="true">AKS</div><div><div class="eyebrow">THE CLOUD NATIVE EXPERIENCE</div><h3>One pass. Endless possibilities.</h3><p>Conference day pass &middot; Synthetic orders only</p><strong>$49 <small>USD</small></strong></div></div>
+          <div class="section-title"><h2>Conference checkout <small>(the service we're breaking/fixing)</small></h2><span id="health" class="status">Checking</span></div>
+          <figure class="availability">
+            <figcaption><span class="eyebrow">SERVICE AVAILABILITY</span><span id="availability-summary" class="caption">Waiting for checkout probes</span></figcaption>
+            <svg id="availability-chart" viewBox="0 0 600 164" role="img" aria-labelledby="availability-title availability-description">
+              <title id="availability-title">Checkout availability over the last five minutes</title>
+              <desc id="availability-description">Each sample is a synthetic checkout request. Gaps indicate no recorded checks.</desc>
+              <text class="chart-label" x="0" y="32">UP</text><text class="chart-label" x="0" y="130">DOWN</text>
+              <path class="chart-grid" d="M 54 28 H 588 M 54 126 H 588"></path>
+              <g id="availability-samples"></g>
+              <text class="chart-label" x="54" y="158">-5 min</text><text class="chart-label" x="588" y="158" text-anchor="end">Now</text>
+            </svg>
+          </figure>
           <div class="probe-row"><span id="probe-detail">Waiting for checkout probe</span><span id="latency">-- ms</span></div>
-          <p class="caption">A real checkout request runs every second. No payment or personal data.</p>
+          <p class="caption">A synthetic checkout request runs every second and feeds this graph. UP = succeeded; DOWN = failed; gaps = no recorded checks. No payment or personal data.</p>
         </section>
         <section class="panel"><div class="section-title"><h2>Choose your chaos</h2><span id="phase" class="pill">STARTING</span></div>
           <div class="scenarios">

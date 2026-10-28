@@ -100,8 +100,40 @@ for (const scenario of ["port", "configuration", "scheduling"] as const) {
     assert.equal(state.history[0]?.repairActor, "agent");
     assert.ok(state.history[0]?.recoveredAt);
     assert.equal(isBaseline(f.git.content), true);
+    const outcomes = state.probeHistory!.map(sample => sample.ok);
+    assert.equal(outcomes[0], true);
+    assert.ok(outcomes.includes(false));
+    assert.equal(outcomes.at(-1), true);
   });
 }
+test("probe history supports old state, bounds retention, and survives reset and persistence", async t => {
+  const f = await fixture(); t.after(() => f.close());
+  t.mock.timers.enable({ apis: ["Date"], now: 1_000_000 });
+  delete f.store.state.probeHistory;
+  await f.engine.tick();
+  assert.deepEqual((await f.store.read()).probeHistory, [{ at: 1_000_000, ok: true }]);
+  await f.store.change(s => {
+    s.probeHistory = [
+      { at: 699_999, ok: false },
+      ...Array.from({ length: 301 }, (_, i) => ({ at: 700_000 + i * 1000, ok: true }))
+    ];
+  });
+  await f.engine.tick();
+  let samples = (await f.store.read()).probeHistory!;
+  assert.equal(samples.length, 301);
+  assert.ok(samples.every(sample => sample.at >= 700_000));
+  t.mock.timers.setTime(1_301_000);
+  await f.engine.tick();
+  samples = (await f.store.read()).probeHistory!;
+  assert.deepEqual(samples, [{ at: 1_301_000, ok: true }]);
+  await f.engine.reset();
+  assert.deepEqual((await f.store.read()).probeHistory, samples);
+  const dir = await mkdtemp(join(tmpdir(), "booth-probe-history-"));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const file = join(dir, "state.json");
+  await new FileStore(file).change(s => { s.probeHistory = samples; });
+  assert.deepEqual((await new FileStore(file).read()).probeHistory, samples);
+});
 test("verification requires both ten probes and ten seconds", async t => {
   const f = await fixture({ timing: { deadlineMs: 180_000, healthyMs: 10_000, healthyCount: 10 } });
   t.after(() => f.close());

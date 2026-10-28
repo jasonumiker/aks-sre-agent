@@ -168,7 +168,11 @@ export class Engine {
     this.ticking = true;
     try {
       const result = await probe(this.checkoutUrl);
-      let state = await this.store.change(s => { s.lastProbe = result; });
+      let state = await this.store.change(s => {
+        s.lastProbe = result;
+        s.probeHistory = [...(s.probeHistory ?? []), { at: result.at, ok: result.ok }]
+          .filter(sample => sample.at >= result.at - 300_000).slice(-301);
+      });
       if (state.phase === "READY" && !result.ok) {
         await this.store.change(s => {
           if (s.phase !== "READY") return;

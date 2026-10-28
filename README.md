@@ -24,6 +24,11 @@ It **simulates Service routing and Kubernetes scheduling**, not AKS or Argo CD.
 evidence-based correction in the operator console, and submit it. The UI
 attributes that repair to the operator, never to Azure SRE Agent.
 
+The checkout panel graphs the last five minutes of server-recorded synthetic
+checkout results (one request scheduled each second), with UP/DOWN outcomes and
+live request latency. Gaps indicate no recorded checks, not successful requests.
+This bounded history persists across page reloads and baseline resets.
+
 Use `BOOTH_TOKEN` for a visitor-only session without reset/repair controls.
 Run only one local controller per `.local` directory. Stop it with Ctrl+C;
 persistent history and Git commits survive restart. Restart always requires a
