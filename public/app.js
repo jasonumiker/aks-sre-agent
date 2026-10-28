@@ -54,8 +54,19 @@ function renderAvailability(samples = []) {
     $("availability-samples").append(path);
   }
 }
+function renderTimer() {
+  const run = state?.run ?? state?.history?.at(-1);
+  const running = state?.run && !["READY", "RESETTING", "OPERATOR_REQUIRED"].includes(state.phase);
+  const end = run?.recoveredAt ?? (running ? Date.now() : undefined);
+  const stopped = run && end === undefined;
+  const seconds = run && end !== undefined ? Math.max(0, Math.floor((end - run.startedAt) / 1000)) : 0;
+  $("elapsed").textContent = stopped ? "--:--" :
+    `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+  $("elapsed-label").textContent = stopped ? "RUN STOPPED - RECOVERY NOT VERIFIED" : "CLICK TO VERIFIED RECOVERY";
+}
 function render() {
   if (!state) return;
+  renderTimer();
   $("login").hidden = true;
   $("dashboard").hidden = false;
   $("logout").hidden = false;
@@ -152,9 +163,7 @@ $("repair-form").addEventListener("submit", event => {
   }));
 });
 setInterval(() => {
-  const run = state?.run ?? state?.history.at(-1);
-  const seconds = run ? Math.floor(((run.recoveredAt ?? Date.now()) - run.startedAt) / 1000) : 0;
-  $("elapsed").textContent = `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+  renderTimer();
   if (state) void refresh();
 }, 1000);
 void refresh();

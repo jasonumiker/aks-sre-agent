@@ -17,6 +17,8 @@ class Element {
   append(child: Element) { this.children.push(child); }
 }
 function dashboard() {
+  let now = 1_000_000;
+  let tick!: () => void;
   const elements = new Map<string, Element>();
   const get = (id: string) => {
     let element = elements.get(id);
@@ -26,14 +28,14 @@ function dashboard() {
   const ui = runInNewContext(`${script}
     ({ renderAvailability, renderState(next) { state = next; render(); } })`, {
     document: { getElementById: get, querySelectorAll: () => [], createElementNS: () => new Element() },
-    Date: class extends Date { static now() { return 1_000_000; } },
-    setInterval() {},
+    Date: class extends Date { static now() { return now; } },
+    setInterval(callback: () => void) { tick = callback; },
     fetch: async () => ({ ok: false, json: async () => ({ error: "Sign in to the booth" }) })
   }) as {
     renderAvailability(samples?: { at: number; ok: boolean }[]): void;
     renderState(state: Record<string, unknown>): void;
   };
-  return { ...ui, get };
+  return { ...ui, get, tick: () => tick(), setTime(value: number) { now = value; } };
 }
 test("availability graph handles empty and expired history without inventing success", () => {
   const ui = dashboard();
@@ -70,4 +72,48 @@ test("dashboard retains live checkout latency alongside availability history", (
   assert.equal(ui.get("latency").textContent, "42 ms");
   assert.equal(ui.get("health").textContent, "CHECKOUT ONLINE");
   assert.equal(ui.get("availability-summary").textContent, "100.0% successful checks (1 sample)");
+});
+const timerState = {
+  mode: "local", phase: "READY", role: "kiosk", events: [], history: []
+};
+test("timer stops for an archived interrupted run without claiming verified recovery", () => {
+  const ui = dashboard();
+  ui.renderState({ ...timerState, history: [{ startedAt: 900_000, deadline: 1_080_000 }] });
+  ui.tick();
+  assert.equal(ui.get("elapsed").textContent, "--:--");
+  assert.equal(ui.get("elapsed-label").textContent, "RUN STOPPED - RECOVERY NOT VERIFIED");
+  ui.setTime(1_100_000);
+  ui.tick();
+  assert.equal(ui.get("elapsed").textContent, "--:--");
+});
+test("timer runs through health verification and freezes at verified recovery", () => {
+  const ui = dashboard();
+  const run = { startedAt: 900_000 };
+  ui.renderState({ ...timerState, phase: "VERIFYING", run, lastProbe: { ok: true, latencyMs: 5 } });
+  ui.tick();
+  assert.equal(ui.get("elapsed").textContent, "01:40");
+  ui.setTime(1_005_000);
+  ui.tick();
+  assert.equal(ui.get("elapsed").textContent, "01:45");
+  const recovered = { ...run, recoveredAt: 1_005_000 };
+  ui.renderState({ ...timerState, phase: "RECOVERED", run: recovered });
+  ui.setTime(1_020_000);
+  ui.tick();
+  assert.equal(ui.get("elapsed").textContent, "01:45");
+  ui.renderState({ ...timerState, history: [recovered] });
+  ui.tick();
+  assert.equal(ui.get("elapsed").textContent, "01:45");
+  assert.equal(ui.get("elapsed-label").textContent, "CLICK TO VERIFIED RECOVERY");
+});
+test("timer stops on operator intervention and starts fresh for the next run", () => {
+  const ui = dashboard();
+  for (const phase of ["OPERATOR_REQUIRED", "RESETTING"]) {
+    ui.renderState({ ...timerState, phase, run: { startedAt: 900_000 } });
+    ui.tick();
+    assert.equal(ui.get("elapsed").textContent, "--:--");
+  }
+  ui.renderState({ ...timerState, phase: "INJECTING", run: { startedAt: 1_000_000 } });
+  ui.tick();
+  assert.equal(ui.get("elapsed").textContent, "00:00");
+  assert.equal(ui.get("elapsed-label").textContent, "CLICK TO VERIFIED RECOVERY");
 });

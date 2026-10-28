@@ -58,16 +58,28 @@ run after reapplying the reproducible agent configuration. All three buttons are
 enabled, and the final observed state was READY with Argo CD Synced/Healthy.
 The controller is pinned
 to booth image digest
-`sha256:c2d5b722403568bdecfe0c7fcf867006c42d03683c8b2063368c879c18a96643`.
+`sha256:88fe07dd35928742cc2aa80b77eb317964f2f3bb480f836b37d2f05ab2560dc4`.
 The 28 October 2026 UI update was built from commit `e703919` as
 `sre-demo/booth:ui-e703919-20261028` (ACR build `cr1`) and deployed as
 revision `sredemo-controller--ui-e703919`. A subsequent hero-copy correction was
 built from that source plus the local wording edit as
 `sre-demo/booth:copy-20261028-0213` (ACR build `cr2`) and deployed as
-`sredemo-controller--copy-20261028-0213`, which now receives all traffic.
+`sredemo-controller--copy-20261028-0213`. The headline line-break update is
+published as `sre-demo/booth:headline-20261028-0222` (ACR build `cr3`) in
+revision `sredemo-controller--headline-20261028-0222`.
+The interrupted-run timer fix is published as
+`sre-demo/booth:timer-20261028-0229` (ACR build `cr4`) in revision
+`sredemo-controller--timer-20261028-0229`, which now receives all traffic.
+The live timer JavaScript exactly matched the regression-tested source, and the
+controller returned to READY with fresh successful checkout probes after reset.
 The exact corrected public wording, persisted
 availability samples, live checkout latency, and READY state were verified after
 an operator baseline reset. Checkout and agent infrastructure were unchanged.
+A visitor run started during the headline rollout; the agent committed its
+repair, but controller restart revoked the run before final recovery verification.
+An operator baseline reset restored READY without claiming agent-verified recovery
+for that interrupted run. The explicit headline line break was verified on the
+public endpoint.
 Operator/kiosk login tokens are in protected local files under
 `.local/azure-secrets/`, not in this document or public browser URLs.
 

@@ -29,6 +29,12 @@ checkout results (one request scheduled each second), with UP/DOWN outcomes and
 live request latency. Gaps indicate no recorded checks, not successful requests.
 This bounded history persists across page reloads and baseline resets.
 
+The timer measures click-to-verified-recovery, including sustained health checks
+after checkout first comes online. It freezes at verified recovery. Interrupted
+or operator-reset runs without verified recovery show `--:--` and
+**RUN STOPPED - RECOVERY NOT VERIFIED**, rather than continuing to count or
+claiming a recovery duration.
+
 Use `BOOTH_TOKEN` for a visitor-only session without reset/repair controls.
 Run only one local controller per `.local` directory. Stop it with Ctrl+C;
 persistent history and Git commits survive restart. Restart always requires a
