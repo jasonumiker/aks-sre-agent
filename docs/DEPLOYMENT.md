@@ -58,7 +58,13 @@ run after reapplying the reproducible agent configuration. All three buttons are
 enabled, and the final observed state was READY with Argo CD Synced/Healthy.
 The controller is pinned
 to booth image digest
-`sha256:a1f48d8d53e176a3b01b3c0426d9be9dfc885e6a7c5d5a579379ac85787dfe2a`.
+`sha256:152213a61ba4bec7ac8bf7dcb45d98f4a053a2cc0911a8cc14afbae2da165f08`.
+The 28 October 2026 UI update was built from commit `e703919` as
+`sre-demo/booth:ui-e703919-20261028` (ACR build `cr1`) and deployed as
+revision `sredemo-controller--ui-e703919`. This healthy revision receives all
+traffic; the previous revision is inactive. The updated public UI, persisted
+availability samples, live checkout latency, and READY state were verified after
+an operator baseline reset. Checkout and agent infrastructure were unchanged.
 Operator/kiosk login tokens are in protected local files under
 `.local/azure-secrets/`, not in this document or public browser URLs.
 
