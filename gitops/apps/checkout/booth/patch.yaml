@@ -7,7 +7,6 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/os: linux
-        booth.example/scenario: no-such-node
       containers:
         - name: checkout
           env:
